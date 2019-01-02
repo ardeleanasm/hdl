@@ -1,7 +1,7 @@
 module Decoder where
 
-import CLaSH.Prelude
-import qualified CLaSH.Sized.Internal.BitVector as BV
+import Clash.Prelude
+import qualified Clash.Sized.Internal.BitVector as BV
 
 decoder::Bool -> BitVector 4 -> BitVector 16
 decoder enable binaryIn 
