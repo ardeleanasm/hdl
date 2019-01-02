@@ -1,5 +1,5 @@
-CC=clash
-FLAGS=-Wall -Werror -threaded -rtsopts -with-rtsopts=-N 
+CC=stack exec --resolver=lts-12.14 -- ~/.local/bin/clash
+FLAGS=-Wall -threaded -rtsopts -with-rtsopts=-N 
 MODULE=MAC
 OUT=obj
 HDL=verilog
@@ -14,7 +14,6 @@ build:
 	$(CC) $(FLAGS) $(MODULE).hs
 
 move_files:create_dir
-	mv *.dyn_* $(OUT)
 	mv *.hi *.o $(OUT)
 
 clean:
@@ -24,7 +23,6 @@ clean:
 generate:
 	mkdir -p $(OUT)
 	$(CC) $(FLAGS) --$(HDL) $(MODULE).hs
-	mv *.dyn_* $(OUT)
 	mv *.hi *.o $(OUT)
 	mkdir -p generated
 	mv $(HDL) generated/

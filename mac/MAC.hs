@@ -2,7 +2,11 @@
 module MAC where
 
 
-import CLaSH.Prelude
+import Clash.Prelude
+
+
+import Clash.Explicit.Testbench
+
 
 ma :: Num a=>a->(a,a)->a
 ma acc (x,y) = acc + x * y
@@ -13,16 +17,20 @@ macT acc (x,y) = (accumulate,o)
         accumulate = ma acc (x,y)
         o = acc
 
-mac :: Num o => Signal (o,o) -> Signal o
-mac = mealy macT 0
+topEntity
+    :: Clock System Source
+    -> Reset System Asynchronous
+    -> Signal System (Signed 8, Signed 8)
+    -> Signal System (Signed 8)
+topEntity = exposeClockReset $ mealy macT 0
+{-# NOINLINE topEntity #-}
 
-topEntity :: Signal (Signed 8, Signed 8) -> Signal (Signed 8)
-topEntity = mac
+testBench :: Signal System Bool
+testBench = done
+    where 
+        testInput = stimuliGenerator clk rst $(listToVecTH [(1,1)::(Signed 8,Signed 8),(2,2),(3,3),(4,4)])
+        expectOutput = outputVerifier clk rst $(listToVecTH [0::Signed 8,1,5,14])
+        done = expectOutput (topEntity clk rst testInput)
+        clk  = tbSystemClockGen (not <$> done)
+        rst  = systemResetGen
 
---Tests
-
-testInput :: Signal (Signed 8,Signed 8)
-testInput = stimuliGenerator $(listToVecTH [(1,1)::(Signed 8,Signed 8),(2,2),(3,3),(4,4)])
-
-expectedOutput :: Signal (Signed 8) -> Signal Bool
-expectedOutput = outputVerifier $(listToVecTH [0::Signed 8,1,5,14])
