@@ -68,19 +68,19 @@ module control_unit
            next_state = `S3;
         end
         `S3: begin
-	   if (counter == MAX_VALUE_COUNT) begin
-	      next_state = `S5;
-	   end
-	   else begin
-              next_state = `S4;
-	   end
+         if (counter == MAX_VALUE_COUNT) begin
+            next_state = `S5;
+         end
+         else begin
+                next_state = `S4;
+         end
+	   	end
         `S4: begin
            next_state = `S2;
         end
         `S5: begin
 	   next_state = `S6;
          end
-        end
         `S6: begin
            next_state = `S7;
         end
@@ -129,6 +129,5 @@ module control_unit
    assign counter = counter_in;
 
 endmodule   
-
 
 
