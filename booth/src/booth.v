@@ -128,7 +128,7 @@ module booth ( inbus,
      (  .clk(clk),
 	.beginsig(beginsig),
 	.locksig(locksig),
-	.q_reg(q_1),
+      .q_reg({q_0,q_1}),
 	.counter_in(counter_out),
 	.endsig(endsig),
 	.control(control)
