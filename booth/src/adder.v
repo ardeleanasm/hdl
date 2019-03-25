@@ -11,9 +11,9 @@ module adder(
    input 	 ctl_add;
    input 	 ctl_sub;
    input ctl_init;
-   input [REG_WIDTH-1] input_a;
-   input [REG_WIDTH-1] input_b;
-   output reg [REG_WIDTH-1] output_c;
+  input [REG_WIDTH-1:0] input_a;
+  input [REG_WIDTH-1:0] input_b;
+  output reg [REG_WIDTH-1:0] output_c;
 
    always @({ctl_add,ctl_sub,ctl_init}) begin
       case ({ctl_add,ctl_sub,ctl_init})
