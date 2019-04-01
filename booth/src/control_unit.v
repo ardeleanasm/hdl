@@ -1,24 +1,12 @@
-/*
-State          Inputs            Next State     Ctrl
-S0             begin = 0,lock=1  S1             c0
-S1             x                 S2             c1
-S2             Q1Q0=01           S3             c2
-               Q1Q0=10           S3             c2c3
-S3             CountX=1          S5             -
-               CountX=0          S4             
-S4             X                 S2             c4  
-S5             X                 S6             c5
-S6             X                 S7             c6
-S7             DONE
-*/
-`define S0  3'b000
-`define S1  3'b001
-`define S2  3'b010
-`define S3  3'b011
-`define S4  3'b100
-`define S5  3'b101
-`define S6  3'b110
-`define S7  3'b111
+`define WAIT  3'b000
+`define BEGIN  3'b001
+`define INPUT  3'b010
+`define SCAN  3'b011
+`define TEST  3'b100
+`define OUTA  3'b101
+`define OUTQ  3'b110
+`define DONE  3'b111
+`timescale 1 ns/1 ps
 module control_unit
   (
    clk,
@@ -26,82 +14,94 @@ module control_unit
    locksig,
    q_reg,
    counter_in,
+   counter_out,
    endsig,
    control,
 
    );
 
    parameter int COUNTER_BITS=3;
-   parameter int MAX_VALUE_COUNT=3'b111;
    
-   input 	                 clk;
-   input 	                 beginsig;
-   input 	                 locksig;
-   input      [1:0]      	 q_reg;
-   input      [COUNTER_BITS-1:0] counter_in;
-   output reg [7:0] 	         control;
-   output 		         endsig;
+   input 	 clk;
+   input 	 beginsig;
+   input 	 locksig;
+   input [1:0] 	 q_reg;
+   input [COUNTER_BITS-1:0] counter_in;
+   output [COUNTER_BITS-1:0] counter_out;
    
-   reg [2:0] current_state;
-   reg [2:0] next_state;
+   output reg [7:0] 	     control;
+   output 		     endsig;
    
-   reg [COUNTER_BITS-1:0] 	       counter;
+   reg [2:0] 		     current_state;
+   reg [2:0] 		     next_state;
+   
+   reg [COUNTER_BITS-1:0]    counter;
 
-   always @(posedge clk, posedge beginsig) begin
-      if (beginsig && !locksig) begin
-         current_state = `S0;
-      end
-      else begin
-         current_state = next_state;
-      end
-   end
+
+   always @(posedge clk, posedge beginsig) 
+     begin:FSM_SEQ
+	if (beginsig == 1'b1) begin
+           current_state = `WAIT;
+	end
+	else begin
+	   if (locksig == 1'b1) begin
+	      current_state =  next_state;
+	   end
+	end
+     end
+
    
-   always @(locksig,current_state) begin
+   always @(current_state) begin
       case (current_state)
-        `S0: begin
-           next_state = `S1;
-        end
-        `S1: begin
-           next_state = `S2;
-        end
-        `S2: begin
-           next_state = `S3;
-        end
-        `S3: begin
-         if (counter == MAX_VALUE_COUNT) begin
-            next_state = `S5;
-         end
-         else begin
-                next_state = `S4;
-         end
-	   	end
-        `S4: begin
-           next_state = `S2;
-        end
-        `S5: begin
-	   next_state = `S6;
-         end
-        `S6: begin
-           next_state = `S7;
-        end
-        `S7: begin
-        end
-        default:;
-      endcase
+	`WAIT: begin
+	   $display("S0->S1");
+	   next_state = `BEGIN;
+	end
+	`BEGIN: begin
+	   $display("S1->S2");
+	   next_state = `INPUT;
+	end
+	`INPUT: begin
+	   $display("S2->S3");
+	   next_state = `SCAN;
+	end
+	`SCAN: begin
+	   $display("S3->S4");
+	   next_state = `TEST;
+	end
+	`TEST: begin
+	   if (counter == 3'b111) begin
+	      $display("S4->S5");
+	      next_state = `OUTA;
+	   end
+	   else begin
+	      $display("S4->S3");
+              next_state = `SCAN;
+	   end
+	end
+	`OUTA: begin
+	   $display("S5->S6");
+	   next_state = `OUTQ;
+	end
+	`OUTQ: begin
+	   $display("S6->S7");
+	   next_state = `DONE;
+	end
+	default:;
+      endcase // case (state)
    end
    
    
    always @(current_state) begin
       case (current_state)
-        `S0: begin
-	   if (locksig) begin
-	     control = 1<<0;
-	   end
+        `WAIT:;
+        `BEGIN: begin
+	   control = 1<<0;
 	end
-        `S1: begin
-           control = 1<<1;
+        `INPUT: begin
+	   control = 1<<1;
         end
-        `S2: begin
+        `SCAN: begin
 	   case (q_reg)
 	     2'b01: begin
 		control = 1<<2;
@@ -110,24 +110,29 @@ module control_unit
 		control = (1<<2) | (1<<3);
 	     end
 	   endcase
+	end
+        `TEST: begin
+	   if (counter != 3'b111) begin
+	      control=1<<4;
+	   end
+	end
+        `OUTA: begin
+	   control = 1<<5;
         end
-        `S3:;
-        `S4: begin
-           control = 1<<4;
+        `OUTQ: begin
+	   control = 1<<6;
         end
-        `S5: begin
-           control = 1<<5;
-        end
-        `S6: begin
-           control = 1<<6;
-        end
-        `S7:;
         default:;
       endcase
+      
    end
-   assign endsig=(current_state != `S7)?1'b1:1'b0;
+   
+  
+   assign endsig=(current_state != `DONE)?1'b1:1'b0;
    assign counter = counter_in;
-
+   assign counter_out = counter;
+   
 endmodule   
+
 
 

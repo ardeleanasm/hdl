@@ -27,114 +27,116 @@ module booth ( inbus,
    output 		 endsig;
    output [BUS_WIDTH-1:0] outbus;
 
-   wire 		  q_1; 		
-   wire 		  q_0;
-   wire [BUS_WIDTH-1:0]   q_reg;
-   wire [BUS_WIDTH-1:0]   a_reg;
-   
-   wire [BUS_WIDTH-1:0]   control;
-   wire [BUS_WIDTH-1:0]   m_reg;
-   wire [2:0] 		  counter_out;
-   wire [2:0] 		  counter_in;
-   wire [BUS_WIDTH-1:0]   bus;
-
-   wire 		  shiftout_a;
-   
-   
-   
-  
+   wire [7:0] 		  control;
 
 
-   register #(.REG_WIDTH(8)) A
+   // wire that connect M register with adder
+   wire [BUS_WIDTH-1:0]   m_wire;
+   
+   wire [BUS_WIDTH-1:0]   q_wire;
+   
+// wire that connect A register with adder
+   wire [BUS_WIDTH-1:0]   a_wire;
+
+   // wire that connect ADDER output with A register
+   wire [BUS_WIDTH-1:0]   sum_wire;
+   
+   wire 		  q_0_wire;
+   wire 		  q_1_wire;
+   wire 		  a_0_wire;
+   wire [2:0] 		  counter_wire;
+   wire [2:0] 		  counter_inc_wire;
+ 		  
+
+   register #(.REG_WIDTH(BUS_WIDTH)) MREG 
      (
-     .inbus(a_reg),
-     .outbus(bus),
-     .load(control[0]),
-     .dump(control[5]),
-     .shr(control[4]),
-     .shiftout(shiftout_a),
-       .shiftin(a_reg[BUS_WIDTH-1]),
-       .lsb()
-     );
+      .in(inbus),
+      .out(m_wire),
+      .cout(),
+      .clk(clk),
+      .load(control[0]),
+      .dump(),
+      .shr(),
+      .shiftout(),
+      .shiftin()
+      );
 
-   register #(.REG_WIDTH(8)) Q
+   register #(.REG_WIDTH(BUS_WIDTH)) QREG
      (
-      .inbus(inbus),
-      .outbus(bus),
+      .in(inbus),
+      .out(q_wire),
+      .cout(outbus),
+      .clk(clk),
       .load(control[1]),
       .dump(control[6]),
       .shr(control[4]),
-      .shiftout(q_1),
-       .shiftin(shiftout_a),
-       .lsb(q_0)
+      .shiftout(q_0_wire),
+      .shiftin(a_0_wire)
       );
 
-   register #(.REG_WIDTH(1)) Q_1
+   d_ff Q_1
      (
-       .inbus(q_0),
-      .outbus(),
-      .load(control[0]),
-      .dump(),
-      .shr(control[4]),
-      .shiftout(),
-       .shiftin(q_1),
-       .lsb()
-      );
-
-   register #(.REG_WIDTH(8)) M
-     (
-      .inbus(inbus),
-      .outbus(m_reg),
-      .load(control[0]),
-      .dump(),
-      .shr(),
-      .shiftout(),
-       .shiftin(),
-       .lsb()
-      );
-
-   register #(.REG_WIDTH(3)) COUNTER
-     (
-      .inbus(counter_in),
-      .outbus(counter_out),
-      .load(control[0]),
-      .dump(control[4]),
-      .shr(),
-      .shiftout(),
-       .shiftin(),
-       .lsb()
+      .data(q_0_wire),
+      .clk(control[4]),
+      .reset(control[1]),
+      .q(q_1_wire)
       );
    
-
+   
+   register #(.REG_WIDTH(BUS_WIDTH)) AREG
+     (
+      .in(sum_wire),
+      .out(a_wire),
+      .cout(outbus),
+      .clk(clk),
+      .load(control[0]|control[2]|control[3]),
+      .dump(control[5]),
+      .shr(control[4]),
+      .shiftout(a_0_wire),
+      .shiftin(sum_wire[BUS_WIDTH-1])
+      );
+   
    adder #(.REG_WIDTH(BUS_WIDTH)) ADDER
-     (  .input_a(bus),
-	.input_b(m_reg),
-	.output_c(a_reg),
-	.ctl_add(control[2]),
-	.ctl_sub(control[3]),
-	.ctl_init(control[0])
+     (
+      .clk(clk),
+      .input_a(a_wire),
+      .input_b(m_wire),
+      .output_c(sum_wire),
+      .ctl_add(control[2]),
+      .ctl_sub(control[3]),
+      .ctl_init(control[0])
       );
 
    adder #(.REG_WIDTH(3)) COUNTER_INC
-     (  .input_a(counter_out),
-	.input_b(3'b001),
-	.output_c(counter_in),
-	.ctl_add(control[4]),
-	.ctl_sub(1'b0),
-	.ctl_init(control[0])
-	);
-
-   control_unit #(.COUNTER_BITS(3),.MAX_VALUE_COUNT(3'b111)) CTL
-     (  .clk(clk),
-	.beginsig(beginsig),
-	.locksig(locksig),
-      .q_reg({q_0,q_1}),
-	.counter_in(counter_out),
-	.endsig(endsig),
-	.control(control)
+     (
+      .clk(clk),
+      .input_a(counter_wire),
+      .input_b(3'b001),
+      .output_c(counter_inc_wire),
+      .ctl_add(control[4]),
+      .ctl_sub(1'b0),
+      .ctl_init(control[0])
       );
    
-   assign outbus=bus;
+   control_unit #(.COUNTER_BITS(3)) CTL
+     (  
+	.clk(clk),
+	.beginsig(beginsig),
+	.locksig(locksig),
+	.q_reg({q_wire[0],q_1_wire}),
+	.counter_in(counter_inc_wire),
+	.counter_out(counter_wire),
+	.endsig(endsig),
+	.control(control)
+	);
+   initial begin
+      $monitor("%b %b %b %b",a_wire,a_0_wire,q_wire,q_1_wire);
+   end
+
+  
+
+
+   
+
    
 endmodule // booth
-

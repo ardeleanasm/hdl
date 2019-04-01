@@ -1,23 +1,25 @@
-PROJECT=boothr4
+PROJECT=booth
 FILES=src
 TEST=testbench
 OUT=obj
-OBJ=boothr4
+OBJ=booth
 HDL=iverilog
+FLAGS=-g2005-sv
 GTKWAVE=gtkwave
 
 MODULES=\
-	$(FILES)/booth_algo.v \
-	$(FILES)/boothr4.v \
-	$(FILES)/control_unit.v
-
+	$(FILES)/booth.v \
+	$(FILES)/adder.v \
+	$(FILES)/control_unit.v \
+	$(FILES)/d_ff.v \
+	$(FILES)/register.v
 
 all: compile
 
 
 compile:
 	mkdir -p $(OUT)
-	$(HDL) $(MODULES) $(TEST)/boothr4_tb.v -o $(OUT)/$(OBJ)
+	$(HDL) $(FLAGS) $(MODULES) $(TEST)/booth_tb.v -o $(OUT)/$(OBJ)
 
 run:
 	vvp $(OUT)/$(OBJ)

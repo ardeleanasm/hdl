@@ -1,45 +1,48 @@
 module register(
-		inbus,
-		outbus,
+		in,
+		out,
+		cout,
+		clk,
 		load,
 		dump,
 		shr,
 		shiftout,
-		shiftin,
-  		lsb
+		shiftin
 		);
 
    
    parameter int REG_WIDTH=8;
 
-   input [REG_WIDTH-1:0]  inbus;
+   input [REG_WIDTH-1:0]  in;
    input 		  load;
    input 		  dump;
    input 		  shr;
+   input 		  clk;
 		  
    input 		  shiftin;
    output reg 		  shiftout;
-   output lsb;
-   output reg [REG_WIDTH-1:0] outbus;
-  
+      
+   output reg [REG_WIDTH-1:0] out;
+   output reg [REG_WIDTH-1:0] cout;
+   
 		   
    reg [REG_WIDTH-1:0] storage;
 
-   always @({load,dump,shr}) begin
-      case ({load,dump,shr})
-      3'b100: begin
-         storage = inbus;
-         shiftout = 1'b0;
+   always @(posedge clk) begin
+      if (load == 1'b1) begin
+	 storage <= in;
+	 shiftout <= 1'b0;
       end
-      5'b010: begin
-         outbus = storage;
+      if (dump == 1'b1) begin
+	 cout <= storage;
       end
-      5'b001: begin
-         shiftout = storage[0];
-         storage = {shiftin,storage >>1};
+      if (shr == 1'b1) begin
+	 shiftout <= storage[0];
+	 storage <= {shiftin,storage >>1};
       end
-      endcase // case ({load,dump,shl,shr})
-      
+   
    end // always @ (control)
-  assign lsb=storage[0];
+   assign out = storage;
+   
 endmodule // register
+
