@@ -1,4 +1,5 @@
-CC=stack exec --resolver=lts-12.14 -- ~/.local/bin/clash
+#CC=stack exec --resolver=lts-12.14 -- ~/.local/bin/clash
+CC=/snap/bin/clash
 FLAGS=-Wall -threaded -rtsopts -with-rtsopts=-N 
 MODULE=Counter
 OUT=obj

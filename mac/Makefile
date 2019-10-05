@@ -1,4 +1,5 @@
-CC=stack exec --resolver=lts-12.14 -- ~/.local/bin/clash
+#CC=stack exec --resolver=lts-12.14 -- ~/.local/bin/clash
+CC=/snap/bin/clash
 FLAGS=-Wall -threaded -rtsopts -with-rtsopts=-N 
 MODULE=MAC
 OUT=obj
@@ -9,7 +10,6 @@ all:create_dir build move_files
 
 create_dir:
 	mkdir -p $(OUT)
-    
 build:
 	$(CC) $(FLAGS) $(MODULE).hs
 

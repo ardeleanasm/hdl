@@ -12,11 +12,12 @@ upCounter initState (load,enable,dataIn) = (nextState,initState)
                   | otherwise   = initState
 
 
-topEntity :: Clock System Source
-    -> Reset System Asynchronous
+topEntity :: Clock System
+    -> Reset System
+    -> Enable System
     -> Signal System (Bool,Bool,Unsigned 8)
     -> Signal System (Unsigned 8)
-topEntity=exposeClockReset $ mealy upCounter 0
+topEntity=exposeClockResetEnable $ mealy upCounter 0
 {-# NOINLINE topEntity #-}
 
 testBench :: Signal System Bool
@@ -24,7 +25,8 @@ testBench = done
     where
         testInput = stimuliGenerator clk rst $(listToVecTH [(True,False,0)::(Bool,Bool,Unsigned 8),(False,True,0),(False,True,0),(False,True,0)])
         expectOutput = outputVerifier clk rst $(listToVecTH [0::Unsigned 8,0,1,2])
-        done = expectOutput ( topEntity clk rst testInput)
+        done = expectOutput ( topEntity clk rst en testInput)
+        en   = enableGen
         clk  = tbSystemClockGen (not <$> done)
         rst  = systemResetGen
 
